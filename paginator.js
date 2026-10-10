@@ -218,6 +218,7 @@ class View {
     #column = true
     #size
     #layout = {}
+    #loaded = false
     constructor({ container, onExpand }) {
         this.container = container
         this.onExpand = onExpand
@@ -247,6 +248,11 @@ class View {
     get element() {
         return this.#element
     }
+    // until the iframe's `load` event, `document` may be a partially parsed
+    // document without a body
+    get loaded() {
+        return this.#loaded
+    }
     get document() {
         return this.#iframe.contentDocument
     }
@@ -254,6 +260,7 @@ class View {
         if (typeof src !== 'string') throw new Error(`${src} is not string`)
         return new Promise(resolve => {
             this.#iframe.addEventListener('load', () => {
+                this.#loaded = true
                 const doc = this.document
                 afterLoad?.(doc)
 
@@ -620,7 +627,7 @@ export class Paginator extends HTMLElement {
         })
 
         this.#mediaQueryListener = () => {
-            if (!this.#view) return
+            if (!this.#view?.loaded) return
             this.#background.style.background = getBackground(this.#view.document)
         }
         this.#mediaQuery.addEventListener('change', this.#mediaQueryListener)
@@ -752,7 +759,8 @@ export class Paginator extends HTMLElement {
         return { height, width, margin, gap, columnWidth }
     }
     render() {
-        if (!this.#view) return
+        // a view that is still loading renders itself once it has loaded
+        if (!this.#view?.loaded) return
         this.#view.render(this.#beforeRender({
             vertical: this.#vertical,
             rtl: this.#rtl,
@@ -950,6 +958,7 @@ export class Paginator extends HTMLElement {
             this.start - size, this.end - size, this.#getRectMapper())
     }
     #afterScroll(reason) {
+        if (!this.#view?.loaded) return
         const range = this.#getVisibleRange()
         this.#lastVisibleRange = range
         // don't set new anchor if relocation was to scroll to anchor
