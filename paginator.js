@@ -416,7 +416,7 @@ class View {
         return this.#overlayer
     }
     destroy() {
-        if (this.document) this.#observer.unobserve(this.document.body)
+        this.#observer.disconnect()
     }
 }
 
@@ -1119,7 +1119,7 @@ export class Paginator extends HTMLElement {
         this.#view.document.defaultView.focus()
     }
     destroy() {
-        this.#observer.unobserve(this)
+        this.#observer.disconnect()
         this.#view.destroy()
         this.#view = null
         this.sections[this.#index]?.unload?.()
